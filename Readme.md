@@ -79,7 +79,7 @@ In the portal, open the Stream Analytics job and navigate to `Outputs` (1). Sele
 After authorizing you will be able to configure the target group workspace (4) where you want to deploy the streaming dataset.
 Click `Save` (5) to persist your changes.
 
-![Configure powerBI](./Documents/ConfigurePowerBI.jpg)
+![Configure powerBI](./Documents/ConfigurePowerBi.jpg)
 
 #### Configure the streaming job
 
