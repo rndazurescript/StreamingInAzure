@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30011.22
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventGenerator", "EventGenerator\EventGenerator.csproj", "{7BD2DC72-8213-42F1-AF76-02C60376FAC3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{934E22B0-A9AD-4AB4-89A5-6EBAAAB1912E}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		Readme.md = Readme.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Models", "Models\Models.csproj", "{58EA632D-4E4A-444B-8D73-8099DB4462A4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DummyDataGenerator", "DummyDataGenerator\DummyDataGenerator.csproj", "{C3C99CF4-C0A8-415D-98C6-A0976CD10BDA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Deployment", "Deployment", "{737CE52C-6B90-4BD8-BDFA-27A03D8772C1}"
+	ProjectSection(SolutionItems) = preProject
+		Deployment\deploy.ps1 = Deployment\deploy.ps1
+		Deployment\pipeline_010_resources.json = Deployment\pipeline_010_resources.json
+		Deployment\pipeline_020_Storage_Upload_Containers.ps1 = Deployment\pipeline_020_Storage_Upload_Containers.ps1
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7BD2DC72-8213-42F1-AF76-02C60376FAC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BD2DC72-8213-42F1-AF76-02C60376FAC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BD2DC72-8213-42F1-AF76-02C60376FAC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BD2DC72-8213-42F1-AF76-02C60376FAC3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58EA632D-4E4A-444B-8D73-8099DB4462A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58EA632D-4E4A-444B-8D73-8099DB4462A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58EA632D-4E4A-444B-8D73-8099DB4462A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58EA632D-4E4A-444B-8D73-8099DB4462A4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C3C99CF4-C0A8-415D-98C6-A0976CD10BDA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3C99CF4-C0A8-415D-98C6-A0976CD10BDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3C99CF4-C0A8-415D-98C6-A0976CD10BDA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3C99CF4-C0A8-415D-98C6-A0976CD10BDA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AA10099E-CDD4-4E97-8F0A-E8E3A59A5F14}
+	EndGlobalSection
+EndGlobal

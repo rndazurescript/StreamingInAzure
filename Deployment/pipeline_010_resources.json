@@ -1,0 +1,382 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "eventHubName": {
+      "defaultValue": "dogwalkdemo-eh",
+      "type": "String"
+    },
+    "storageAccountName": {
+      "defaultValue": "dogwalkdemostg",
+      "type": "String"
+    },
+    "azureStreamAnalyticsJobName": {
+      "defaultValue": "dogwalkdemo-asa",
+      "type": "String"
+    }
+  },
+  "variables": {
+    "location": "[resourceGroup().location]",
+    "storageApiVersion": "[providers('Microsoft.Storage','storageAccounts').apiVersions[0]]",
+    "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]",
+    "eventHubDefaultSASKeyName": "RootManageSharedAccessKey",
+    "eventHubResourceId": "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('eventHubName'), variables('eventHubDefaultSASKeyName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2019-06-01",
+      "name": "[parameters('storageAccountName')]",
+      "location": "[variables('location')]",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "largeFileSharesState": "Disabled",
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "virtualNetworkRules": [],
+          "ipRules": [],
+          "defaultAction": "Allow"
+        },
+        "supportsHttpsTrafficOnly": true,
+        "encryption": {
+          "services": {
+            "file": {
+              "keyType": "Account",
+              "enabled": true
+            },
+            "blob": {
+              "keyType": "Account",
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        },
+        "accessTier": "Hot"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2019-06-01",
+      "name": "[concat(parameters('storageAccountName'), '/default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ],
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "properties": {
+        "cors": {
+          "corsRules": []
+        },
+        "deleteRetentionPolicy": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2019-06-01",
+      "name": "[concat(parameters('storageAccountName'), '/default/dog-walks')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ],
+      "properties": {
+        "publicAccess": "None"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2019-06-01",
+      "name": "[concat(parameters('storageAccountName'), '/default/reference-data')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ],
+      "properties": {
+        "publicAccess": "None"
+      }
+    },
+    {
+      "type": "Microsoft.StreamAnalytics/streamingjobs",
+      "apiVersion": "2016-03-01",
+      "name": "[parameters('azureStreamAnalyticsJobName')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "sku": {
+          "name": "Standard"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.EventHub/namespaces",
+      "apiVersion": "2018-01-01-preview",
+      "name": "[parameters('eventHubName')]",
+      "location": "[variables('location')]",
+      "sku": {
+        "name": "Basic",
+        "tier": "Basic",
+        "capacity": 1
+      },
+      "properties": {
+        "zoneRedundant": false,
+        "isAutoInflateEnabled": false,
+        "maximumThroughputUnits": 0,
+        "kafkaEnabled": false
+      }
+    },
+    {
+      "type": "Microsoft.EventHub/namespaces/eventhubs",
+      "apiVersion": "2017-04-01",
+      "name": "[concat(parameters('eventHubName'), '/', parameters('eventHubName'))]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.EventHub/namespaces', parameters('eventHubName'))]"
+      ],
+      "properties": {
+        "messageRetentionInDays": 1,
+        "partitionCount": 2,
+        "status": "Active"
+      }
+    },
+    {
+      "type": "Microsoft.StreamAnalytics/streamingjobs/functions",
+      "apiVersion": "2016-03-01",
+      "name": "[concat(parameters('azureStreamAnalyticsJobName'), '/FormatNumber')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', parameters('azureStreamAnalyticsJobName'))]"
+      ],
+      "properties": {
+        "type": "Scalar",
+        "properties": {
+          "inputs": [
+            {
+              "dataType": "any"
+            },
+            {
+              "dataType": "any"
+            }
+          ],
+          "output": {
+            "dataType": "nvarchar(max)"
+          },
+          "binding": {
+            "type": "Microsoft.StreamAnalytics/JavascriptUdf",
+            "properties": {
+              "script": "function FormatNumber(input, width) {\n  input = input + '';\n  return input.length >= width ? input : new Array(width - input.length + 1).join('0') + input;\n}"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.StreamAnalytics/streamingjobs/inputs",
+      "apiVersion": "2016-03-01",
+      "name": "[concat(parameters('azureStreamAnalyticsJobName'), '/input-event-hub')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', parameters('azureStreamAnalyticsJobName'))]"
+      ],
+      "properties": {
+        "type": "Stream",
+        "datasource": {
+          "type": "Microsoft.ServiceBus/EventHub",
+          "properties": {
+            "eventHubName": "[parameters('eventHubName')]",
+            "serviceBusNamespace": "[parameters('eventHubName')]",
+            "sharedAccessPolicyName": "[variables('eventHubDefaultSASKeyName')]",
+            "sharedAccessPolicyKey": "[listkeys(variables('eventHubResourceId'),'2017-04-01').primaryKey]"
+          }
+        },
+        "serialization": {
+          "type": "Json",
+          "properties": {
+            "encoding": "UTF8"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.StreamAnalytics/streamingjobs/inputs",
+      "apiVersion": "2016-03-01",
+      "name": "[concat(parameters('azureStreamAnalyticsJobName'), '/ref-data-dogs')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', parameters('azureStreamAnalyticsJobName'))]"
+      ],
+      "properties": {
+        "type": "Reference",
+        "datasource": {
+          "type": "Microsoft.Storage/Blob",
+          "properties": {
+            "storageAccounts": [
+              {
+                "accountName": "[parameters('storageAccountName')]",
+                "accountKey": "[listkeys(variables('storageAccountId'), variables('storageApiVersion')).keys[0].value]"
+              }
+            ],
+            "container": "reference-data",
+            "pathPattern": "{date}/dogs.json",
+            "dateFormat": "yyyy/MM/dd",
+            "timeFormat": "HH"
+          }
+        },
+        "serialization": {
+          "type": "Json",
+          "properties": {
+            "encoding": "UTF8"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.StreamAnalytics/streamingjobs/inputs",
+      "apiVersion": "2016-03-01",
+      "name": "[concat(parameters('azureStreamAnalyticsJobName'), '/ref-data-owners')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', parameters('azureStreamAnalyticsJobName'))]"
+      ],
+      "properties": {
+        "type": "Reference",
+        "datasource": {
+          "type": "Microsoft.Storage/Blob",
+          "properties": {
+            "storageAccounts": [
+              {
+                "accountName": "[parameters('storageAccountName')]",
+                "accountKey": "[listkeys(variables('storageAccountId'), variables('storageApiVersion')).keys[0].value]"
+              }
+            ],
+            "container": "reference-data",
+            "pathPattern": "{date}/owners.json",
+            "dateFormat": "yyyy/MM/dd",
+            "timeFormat": "HH"
+          }
+        },
+        "serialization": {
+          "type": "Json",
+          "properties": {
+            "encoding": "UTF8"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.StreamAnalytics/streamingjobs/inputs",
+      "apiVersion": "2016-03-01",
+      "name": "[concat(parameters('azureStreamAnalyticsJobName'), '/ref-data-petsitters')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', parameters('azureStreamAnalyticsJobName'))]"
+      ],
+      "properties": {
+        "type": "Reference",
+        "datasource": {
+          "type": "Microsoft.Storage/Blob",
+          "properties": {
+            "storageAccounts": [
+              {
+                "accountName": "[parameters('storageAccountName')]",
+                "accountKey": "[listkeys(variables('storageAccountId'), variables('storageApiVersion')).keys[0].value]"
+              }
+            ],
+            "container": "reference-data",
+            "pathPattern": "{date}/petsitters.json",
+            "dateFormat": "yyyy/MM/dd",
+            "timeFormat": "HH"
+          }
+        },
+        "serialization": {
+          "type": "Json",
+          "properties": {
+            "encoding": "UTF8"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.StreamAnalytics/streamingjobs/outputs",
+      "apiVersion": "2016-03-01",
+      "name": "[concat(parameters('azureStreamAnalyticsJobName'), '/output-pbi')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', parameters('azureStreamAnalyticsJobName'))]"
+      ],
+      "properties": {
+        "datasource": {
+          "type": "PowerBI",
+          "properties": {
+            "dataset": "demo-streaming-dataset",
+            "table": "dogwalk-data",
+            "refreshToken": "invalid"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.StreamAnalytics/streamingjobs/outputs",
+      "apiVersion": "2016-03-01",
+      "name": "[concat(parameters('azureStreamAnalyticsJobName'), '/output-permanent-store-enriched')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', parameters('azureStreamAnalyticsJobName'))]"
+      ],
+      "properties": {
+        "datasource": {
+          "type": "Microsoft.Storage/Blob",
+          "properties": {
+            "storageAccounts": [
+              {
+                "accountName": "[parameters('storageAccountName')]",
+                "accountKey": "[listkeys(variables('storageAccountId'), variables('storageApiVersion')).keys[0].value]"
+              }
+            ],
+            "container": "dog-walks",
+            "pathPattern": "Owners/{PartitionKey}/{date}",
+            "dateFormat": "yyyy/MM/dd",
+            "timeFormat": "HH"
+          }
+        },
+        "serialization": {
+          "type": "Json",
+          "properties": {
+            "encoding": "UTF8",
+            "format": "LineSeparated"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.StreamAnalytics/streamingjobs/outputs",
+      "apiVersion": "2016-03-01",
+      "name": "[concat(parameters('azureStreamAnalyticsJobName'), '/output-permanent-store-missing')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', parameters('azureStreamAnalyticsJobName'))]"
+      ],
+      "properties": {
+        "datasource": {
+          "type": "Microsoft.Storage/Blob",
+          "properties": {
+            "storageAccounts": [
+              {
+                "accountName": "[parameters('storageAccountName')]",
+                "accountKey": "[listkeys(variables('storageAccountId'), variables('storageApiVersion')).keys[0].value]"
+              }
+            ],
+            "container": "dog-walks",
+            "pathPattern": "MissingRefs/{date}/",
+            "dateFormat": "yyyy/MM/dd",
+            "timeFormat": "HH"
+          }
+        },
+        "serialization": {
+          "type": "Json",
+          "properties": {
+            "encoding": "UTF8",
+            "format": "LineSeparated"
+          }
+        }
+      }
+    }
+  ]
+}
